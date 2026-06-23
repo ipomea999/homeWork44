@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "title": "Чистый код",
+    "author": "Роберт Мартин",
+    "image": "clean_code.jpg",
+    "description": "Руководство по созданию хорошего кода.",
+    "isBorrowed": true,
+    "currentHolderId": 1
+  },
+  {
+    "id": 2,
+    "title": "Грокаем алгоритмы",
+    "author": "Адитья Бхаргава",
+    "image": "grokking_algorithms.jpg",
+    "description": "Иллюстрированное пособие по алгоритмам для программистов.",
+    "isBorrowed": false,
+    "currentHolderId": null
+  }
+]
