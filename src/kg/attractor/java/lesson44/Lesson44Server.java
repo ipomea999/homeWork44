@@ -1,4 +1,9 @@
 package kg.attractor.java.lesson44;
+import kg.attractor.java.lesson44.model.Book;
+import kg.attractor.java.lesson44.model.Employee;
+import kg.attractor.java.lesson44.model.MockData;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.sun.net.httpserver.HttpExchange;
 import freemarker.template.Configuration;
@@ -9,6 +14,7 @@ import kg.attractor.java.server.BasicServer;
 import kg.attractor.java.server.ContentType;
 import kg.attractor.java.server.ResponseCodes;
 
+
 import java.io.*;
 
 public class Lesson44Server extends BasicServer {
@@ -17,18 +23,16 @@ public class Lesson44Server extends BasicServer {
     public Lesson44Server(String host, int port) throws IOException {
         super(host, port);
         registerGet("/sample", this::freemarkerSampleHandler);
+        registerGet("/books", this::booksHandler);
+        registerGet("/book", this::bookHandler);
+        registerGet("/employee", this::employeeHandler);
     }
 
     private static Configuration initFreeMarker() {
         try {
             Configuration cfg = new Configuration(Configuration.VERSION_2_3_29);
-            // путь к каталогу в котором у нас хранятся шаблоны
-            // это может быть совершенно другой путь, чем тот, откуда сервер берёт файлы
-            // которые отправляет пользователю
             cfg.setDirectoryForTemplateLoading(new File("data"));
 
-            // прочие стандартные настройки о них читать тут
-            // https://freemarker.apache.org/docs/pgui_quickstart_createconfiguration.html
             cfg.setDefaultEncoding("UTF-8");
             cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
             cfg.setLogTemplateExceptions(false);
@@ -46,28 +50,16 @@ public class Lesson44Server extends BasicServer {
 
     protected void renderTemplate(HttpExchange exchange, String templateFile, Object dataModel) {
         try {
-            // Загружаем шаблон из файла по имени.
-            // Шаблон должен находится по пути, указанном в конфигурации
             Template temp = freemarker.getTemplate(templateFile);
 
-            // freemarker записывает преобразованный шаблон в объект класса writer
-            // а наш сервер отправляет клиенту массивы байт
-            // по этому нам надо сделать "мост" между этими двумя системами
-
-            // создаём поток, который сохраняет всё, что в него будет записано в байтовый массив
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            // создаём объект, который умеет писать в поток и который подходит для freemarker
             try (OutputStreamWriter writer = new OutputStreamWriter(stream)) {
 
-                // обрабатываем шаблон заполняя его данными из модели
-                // и записываем результат в объект "записи"
                 temp.process(dataModel, writer);
                 writer.flush();
 
-                // получаем байтовый поток
                 var data = stream.toByteArray();
 
-                // отправляем результат клиенту
                 sendByteData(exchange, ResponseCodes.OK, ContentType.TEXT_HTML, data);
             }
         } catch (IOException | TemplateException e) {
@@ -75,9 +67,75 @@ public class Lesson44Server extends BasicServer {
         }
     }
 
+    private void employeeHandler(HttpExchange exchange) {
+        Map<String, String> params = getQueryParams(exchange);
+        String idStr = params.get("id");
+        Employee employee = null;
+
+        if (idStr != null) {
+            try {
+                int id = Integer.parseInt(idStr);
+                employee = MockData.getEmployeeById(id);
+            } catch (NumberFormatException e) {
+            }
+        }
+
+        if (employee == null && !MockData.getEmployees().isEmpty()) {
+            employee = MockData.getEmployees().get(0);
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("employee", employee);
+        renderTemplate(exchange, "employee.html", data);
+    }
+
+    private void booksHandler(HttpExchange exchange) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("books", MockData.getBooks());
+        renderTemplate(exchange, "books.html", data);
+    }
+
+    private void bookHandler(HttpExchange exchange) {
+        Map<String, String> params = getQueryParams(exchange);
+        String idStr = params.get("id");
+        Book book = null;
+
+        if (idStr != null) {
+            try {
+                int id = Integer.parseInt(idStr);
+                book = MockData.getBookById(id);
+            } catch (NumberFormatException e) {
+            }
+        }
+
+        if (book == null && !MockData.getBooks().isEmpty()) {
+            book = MockData.getBooks().get(0);
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("book", book);
+        renderTemplate(exchange, "book.html", data);
+    }
+
+    private Map<String, String> getQueryParams(HttpExchange exchange) {
+        Map<String, String> result = new HashMap<>();
+        String query = exchange.getRequestURI().getQuery();
+        if (query == null) {
+            return result;
+        }
+        String[] pairs = query.split("&");
+        for (String pair : pairs) {
+            String[] keyVal = pair.split("=");
+            if (keyVal.length > 1) {
+                result.put(keyVal[0], keyVal[1]);
+            } else if (keyVal.length == 1) {
+                result.put(keyVal[0], "");
+            }
+        }
+        return result;
+    }
+
     private SampleDataModel getSampleDataModel() {
-        // возвращаем экземпляр тестовой модели-данных
-        // которую freemarker будет использовать для наполнения шаблона
         return new SampleDataModel();
     }
 }
