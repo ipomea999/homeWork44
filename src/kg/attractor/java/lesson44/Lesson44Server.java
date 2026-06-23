@@ -1,4 +1,7 @@
 package kg.attractor.java.lesson44;
+import kg.attractor.java.lesson44.model.MockData;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.sun.net.httpserver.HttpExchange;
 import freemarker.template.Configuration;
@@ -9,6 +12,7 @@ import kg.attractor.java.server.BasicServer;
 import kg.attractor.java.server.ContentType;
 import kg.attractor.java.server.ResponseCodes;
 
+
 import java.io.*;
 
 public class Lesson44Server extends BasicServer {
@@ -17,6 +21,7 @@ public class Lesson44Server extends BasicServer {
     public Lesson44Server(String host, int port) throws IOException {
         super(host, port);
         registerGet("/sample", this::freemarkerSampleHandler);
+        registerGet("/books", this::booksHandler); // Регистрация пути
     }
 
     private static Configuration initFreeMarker() {
@@ -73,6 +78,30 @@ public class Lesson44Server extends BasicServer {
         } catch (IOException | TemplateException e) {
             e.printStackTrace();
         }
+    }
+
+    private void booksHandler(HttpExchange exchange) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("books", MockData.getBooks());
+        renderTemplate(exchange, "books.html", data);
+    }
+
+    private Map<String, String> getQueryParams(HttpExchange exchange) {
+        Map<String, String> result = new HashMap<>();
+        String query = exchange.getRequestURI().getQuery();
+        if (query == null) {
+            return result;
+        }
+        String[] pairs = query.split("&");
+        for (String pair : pairs) {
+            String[] keyVal = pair.split("=");
+            if (keyVal.length > 1) {
+                result.put(keyVal[0], keyVal[1]);
+            } else if (keyVal.length == 1) {
+                result.put(keyVal[0], "");
+            }
+        }
+        return result;
     }
 
     private SampleDataModel getSampleDataModel() {

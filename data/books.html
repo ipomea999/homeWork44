@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Список книг</title>
+    <link rel="stylesheet" href="css/freemarker.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Офисная библиотека (Booklender)</h1>
+        <h2>Список всех книг</h2>
+        <div class="header flex">
+            <div class="column">Название</div>
+            <div class="column">Автор</div>
+            <div class="column">Статус</div>
+            <div class="column">Кто взял</div>
+        </div>
+
+        <ul>
+            <#list books as book>
+                <li class="row flex ${book?item_parity}">
+                    <div class="column">
+                        <a href="/book?id=${book.id?c}">${book.title}</a>
+                    </div>
+                    <div class="column">${book.author}</div>
+                    <div class="column">
+                        <#if book.borrowed>Выдана<#else>Свободна</#if>
+                    </div>
+                    <div class="column">
+                        <#if book.borrowed && book.currentHolder??>
+                        <#-- Добавили ?c для ID сотрудника -->
+                        <a href="/employee?id=${book.currentHolder.id?c}">${book.currentHolder.name}</a>
+                        <#else>
+                        —
+                        </#if>
+                    </div>
+                </li>
+            </#list>
+        </ul>
+        <#else>
+            <p>В библиотеке пока нет книг или список пуст.</p>
+        </#if>
+    </div>
+</body>
+</html>
